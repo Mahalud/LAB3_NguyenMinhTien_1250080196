@@ -10,7 +10,7 @@ CREATE TABLE course (
     CONSTRAINT fk_course_pre FOREIGN KEY (prerequisite)
         REFERENCES course(courseno)
 );
-
+select * from course
 CREATE TABLE instructor (
     instructorid NUMBER PRIMARY KEY,
     firstname VARCHAR2(50),
@@ -643,3 +643,114 @@ END trg_max_enrollment;
 INSERT INTO enrollment (studentid, classid, enrolldate, createdby, createddate, modifiedby, modifieddate) 
 VALUES (101, 999, SYSDATE, USER, SYSDATE, USER, SYSDATE); 
 -- -> Oracle se bao loi ORA-20001
+
+
+-- so sánh truy v?n bth và store
+SELECT USER AS username,
+       SUM(co.cost) AS tong_tien
+FROM enrollment e
+JOIN class cl ON e.classid = cl.classid
+JOIN course co ON cl.courseno = co.courseno
+WHERE e.studentid = 101
+GROUP BY USER;
+
+SELECT USER AS username,
+       Total_cost_for_student(101) AS tong_tien
+FROM dual;
+
+
+SELECT USER, firstname, lastname
+FROM student
+WHERE studentid = 101;
+
+SET SERVEROUTPUT ON;
+
+DECLARE
+    v_first student.firstname%TYPE;
+    v_last  student.lastname%TYPE;
+BEGIN
+    find_sname(101, v_first, v_last);
+    DBMS_OUTPUT.PUT_LINE('Ten: ' || v_first || ' ' || v_last);
+END;
+/
+
+
+SELECT USER,
+       CASE 
+           WHEN finalgrade >= 90 THEN 'A'
+           WHEN finalgrade >= 80 THEN 'B'
+           ELSE 'C'
+       END AS grade
+FROM enrollment
+WHERE studentid = 101 AND classid = 1;
+
+SET SERVEROUTPUT ON;
+
+DECLARE
+    v_score NUMBER;
+    v_grade VARCHAR2(2);
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('USER: ' || USER);
+
+    SELECT finalgrade INTO v_score
+    FROM enrollment
+    WHERE studentid = 101 AND classid = 1;
+
+    IF v_score >= 90 THEN
+        v_grade := 'A';
+    ELSIF v_score >= 80 THEN
+        v_grade := 'B';
+    ELSE
+        v_grade := 'C';
+    END IF;
+
+    DBMS_OUTPUT.PUT_LINE('Grade: ' || v_grade);
+END;
+/
+
+
+
+SELECT USER, courseno, description
+FROM course;
+
+SET SERVEROUTPUT ON;
+
+DECLARE
+    CURSOR c IS SELECT courseno, description FROM course;
+    v_cno NUMBER;
+    v_desc VARCHAR2(100);
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('USER: ' || USER);
+
+    OPEN c;
+    LOOP
+        FETCH c INTO v_cno, v_desc;
+        EXIT WHEN c%NOTFOUND;
+
+        DBMS_OUTPUT.PUT_LINE(v_cno || ' - ' || v_desc);
+    END LOOP;
+    CLOSE c;
+END;
+/
+
+SELECT USER, firstname
+FROM student
+WHERE studentid = 999;
+
+
+SET SERVEROUTPUT ON;
+
+DECLARE
+    v_name VARCHAR2(50);
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('USER: ' || USER);
+
+    SELECT firstname INTO v_name
+    FROM student
+    WHERE studentid = 999;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('Khong tim thay!');
+END;
+/
